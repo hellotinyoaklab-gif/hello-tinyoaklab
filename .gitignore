@@ -1,0 +1,10 @@
+node_modules/
+.firebase/
+.netlify/
+.wrangler/
+firebase-debug*.log
+.env
+.env.*
+*.zip
+*.local
+Thumbs.db
