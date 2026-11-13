@@ -1,0 +1,47 @@
+name: Deploy studio website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Check site links and assets
+        run: node scripts/check.mjs
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Set links for the published site
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          sed -i "s@property=\"og:image\" content=\"/@property=\"og:image\" content=\"${PAGES_BASE_URL%/}/@" public/index.html
+          sed -Ei "s@((href|src)=\")/([^/])@\1${PAGES_BASE_PATH%/}/\3@g" public/*.html
+          sed -Ei "s@(url\(['\"]?)/([^/])@\1${PAGES_BASE_PATH%/}/\2@g" public/styles.css
+      - name: Upload website files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
